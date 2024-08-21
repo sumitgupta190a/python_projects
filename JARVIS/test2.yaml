@@ -1,0 +1,77 @@
+steps:
+  # Step 1: Build the Docker image (used by all services)
+  - name: gcr.io/cloud-builders/docker
+    id: Build-Image
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+      - .
+      - '-f'
+      - Dockerfile
+
+  # Step 2: Push the Docker image
+  - name: gcr.io/cloud-builders/docker
+    id: Push-Image
+    waitFor: ['Build-Image']
+    args:
+      - push
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+
+  # Step 3: Deploy dev-flow-vm using the built image
+  - name: gcr.io/cloud-builders/kubectl
+    id: Deploy-dev-flow-vm
+    waitFor: ['Push-Image']
+    env:
+      - CLOUDSDK_COMPUTE_ZONE=$_GKE_CLUSTER_ZONE
+      - CLOUDSDK_CONTAINER_CLUSTER=$_GKE_CLUSTER_NAME
+    args:
+      - set
+      - image
+      - deployment/dev-flow-vm
+      - 'dev-flow-vm-container=$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+
+  # Step 4: Deploy dev-flow-consumer using the same image (independent of other services)
+  - name: gcr.io/cloud-builders/kubectl
+    id: Deploy-dev-flow-consumer
+    waitFor: ['Push-Image']
+    env:
+      - CLOUDSDK_COMPUTE_ZONE=$_GKE_CLUSTER_ZONE
+      - CLOUDSDK_CONTAINER_CLUSTER=$_GKE_CLUSTER_NAME
+    args:
+      - set
+      - image
+      - deployment/dev-flow-consumer
+      - 'dev-flow-consumer-container=$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+
+  # Step 5: Deploy dev-notification-consumer using the same image (independent of other services)
+  - name: gcr.io/cloud-builders/kubectl
+    id: Deploy-dev-notification-consumer
+    waitFor: ['Push-Image']
+    env:
+      - CLOUDSDK_COMPUTE_ZONE=$_GKE_CLUSTER_ZONE
+      - CLOUDSDK_CONTAINER_CLUSTER=$_GKE_CLUSTER_NAME
+    args:
+      - set
+      - image
+      - deployment/dev-notification-consumer
+      - 'dev-notification-consumer-container=$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _AR_HOSTNAME: asia-docker.pkg.dev
+  REPO_NAME: socket-vm
+  _AR_NAME: socket
+  _GKE_CLUSTER_NAME: viasocket-v2
+  _GKE_CLUSTER_ZONE: asia-south1-c
+tags:
+  - flow-vm
+  - dev-flow-vm
+  - flow-consumer
+  - flow-consumer-dev
+  - notification-consumer
+  - dev-notification-consumer

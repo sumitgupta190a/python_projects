@@ -1,0 +1,96 @@
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+      - .
+      - '-f'
+      - Dockerfile
+    id: Build-dev-flow-vm
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA'
+    id: Push-dev-flow-vm
+  - name: gcr.io/cloud-builders/kubectl
+    env:
+      - CLOUDSDK_COMPUTE_ZONE=$_GKE_CLUSTER_ZONE
+      - CLOUDSDK_CONTAINER_CLUSTER=$_GKE_CLUSTER_NAME
+    args:
+      - set
+      - image
+      - deployment/dev-flow-vm
+      - >-
+        dev-flow-vm-container=$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/flow-vm-dev:$COMMIT_SHA
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - >-
+        $_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/dev-flow-consumer:$COMMIT_SHA
+      - .
+      - '-f'
+      - Dockerfile
+    id: Build-dev-flow-consumer
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - >-
+        $_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/dev-flow-consumer:$COMMIT_SHA
+    id: Push-dev-flow-consumer
+  - name: gcr.io/cloud-builders/kubectl
+    env:
+      - CLOUDSDK_COMPUTE_ZONE=$_GKE_CLUSTER_ZONE
+      - CLOUDSDK_CONTAINER_CLUSTER=$_GKE_CLUSTER_NAME
+    args:
+      - set
+      - image
+      - deployment/dev-flow-consumer
+      - >-
+        dev-flow-consumer-container=$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/dev-flow-consumer:$COMMIT_SHA
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - '--no-cache'
+      - '-t'
+      - >-
+        $_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/dev-notification-consumer:$COMMIT_SHA
+      - .
+      - '-f'
+      - Dockerfile
+    id: Build-dev-notification-consumer
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - >-
+        $_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/dev-notification-consumer:$COMMIT_SHA
+    id: Push-dev-notification-consumer
+  - name: gcr.io/cloud-builders/kubectl
+    env:
+      - CLOUDSDK_COMPUTE_ZONE=$_GKE_CLUSTER_ZONE
+      - CLOUDSDK_CONTAINER_CLUSTER=$_GKE_CLUSTER_NAME
+    args:
+      - set
+      - image
+      - deployment/dev-notification-consumer
+      - >-
+        dev-notification-consumer-container=$_AR_HOSTNAME/$PROJECT_ID/$_AR_NAME/$REPO_NAME/dev-notification-consumer:$COMMIT_SHA
+options:
+  substitutionOption: ALLOW_LOOSE
+  logging: CLOUD_LOGGING_ONLY
+substitutions:
+  _AR_HOSTNAME: asia-docker.pkg.dev
+  REPO_NAME: socket-vm
+  _AR_NAME: socket
+  _GKE_CLUSTER_NAME: viasocket-v2
+  _GKE_CLUSTER_ZONE: asia-south1-c
+tags:
+  - flow-vm
+  - dev-flow-vm
+  - flow-consumer
+  - flow-consumer-dev
+  - notification-consumer
+  - dev-notification-consumer

@@ -1,0 +1,14 @@
+pip install speechrecognition
+pip install wikipedia
+pip install openai
+
+CMD NOW FOR MAC
+xcode-select --install
+brew remove portaudio (agar hamare existing portaudio ka installation hai usko remove kr dega)
+pip install pyaudio
+
+For WINDOWS
+1. search inofficial python binaries on browser
+2. ctrl+f and search pyaudio in the website and download in the same folder
+3. pip3 install pyaudio (and press tab)
+
